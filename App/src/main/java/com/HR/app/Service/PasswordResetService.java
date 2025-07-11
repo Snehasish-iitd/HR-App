@@ -27,7 +27,7 @@ public class PasswordResetService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Generate a random 4-digit code
+    // Generate a random 4-digit OTP code
     private String generateOtpCode() {
         Random random = new Random();
         int otp = 1000 + random.nextInt(9000);
@@ -38,14 +38,25 @@ public class PasswordResetService {
         Users user = userRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("No user found with email: " + email));
         String code = generateOtpCode();
-        PasswordResetToken resetToken = new PasswordResetToken(code, user, LocalDateTime.now().plusMinutes(30));
-        tokenRepository.save(resetToken);
+        LocalDateTime expiry = LocalDateTime.now().plusMinutes(30);
 
+        // Update existing token if present, else create new
+        Optional<PasswordResetToken> existingOpt = tokenRepository.findByUser(user);
+        if (existingOpt.isPresent()) {
+            PasswordResetToken existing = existingOpt.get();
+            existing.setCode(code);
+            existing.setExpiry(expiry);
+            tokenRepository.save(existing);
+        } else {
+            PasswordResetToken resetToken = new PasswordResetToken(code, user, expiry);
+            tokenRepository.save(resetToken);
+        }
+
+        // Send code via email
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
         message.setSubject("Password Reset Code");
         message.setText("Your password reset code is: " + code + "\nThis code is valid for 30 minutes.");
-
         mailSender.send(message);
     }
 
