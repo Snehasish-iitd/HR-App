@@ -2,11 +2,19 @@ package com.HR.app.Controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import com.HR.app.DTO.ForgotPasswordRequest;
+import com.HR.app.DTO.JwtResponse;
+import com.HR.app.DTO.LoginRequest;
+import com.HR.app.DTO.ResetPasswordRequest;
 import com.HR.app.Security.JwtService;
 import com.HR.app.Service.CustomUserDetailsService;
+import com.HR.app.Service.PasswordResetService;
 
+import lombok.AllArgsConstructor;
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -16,16 +24,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthenticationManager authenticationManager,
-                         CustomUserDetailsService userDetailsService,
-                         JwtService jwtService,
-                         PasswordResetService passwordResetService) {
-        this.authenticationManager = authenticationManager;
-        this.userDetailsService = userDetailsService;
-        this.jwtService = jwtService;
-        this.passwordResetService = passwordResetService;
-    }
-
+    
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         authenticationManager.authenticate(
