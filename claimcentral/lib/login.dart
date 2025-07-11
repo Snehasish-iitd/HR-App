@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import "forgotpassword.dart";
+import "home.dart";
 
 class LoginPage extends StatefulWidget {
   @override
@@ -270,7 +271,12 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                   ),
                                   onPressed: () {
-                                    // TODO: Handle sign in
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => HomePage(),
+                                      ),
+                                    );
                                   },
                                 ),
                               ),
