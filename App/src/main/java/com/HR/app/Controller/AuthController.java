@@ -43,9 +43,21 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
-        boolean result = passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
-        if (result) return ResponseEntity.ok("Password reset successful.");
-        else return ResponseEntity.badRequest().body("Invalid or expired token.");
+        try {
+            boolean result = passwordResetService.resetPassword(
+                request.getEmail(),
+                request.getCode(),
+                request.getNewPassword(),
+                request.getConfirmPassword()
+            );
+            if (result) {
+                return ResponseEntity.ok("Password reset successful.");
+            } else {
+                return ResponseEntity.badRequest().body("Invalid or expired code.");
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
 

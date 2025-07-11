@@ -7,8 +7,10 @@ import lombok.*;
 @NoArgsConstructor
 
 public class ResetPasswordRequest {
-    private String token;
+    private String email;
+    private String code; // 4-digit OTP
     private String newPassword;
-    
+    private String confirmPassword;   
 }
+
 

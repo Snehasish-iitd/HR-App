@@ -1,8 +1,8 @@
 package com.HR.app.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ import com.HR.app.Repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Random;
 
 @Service
 public class PasswordResetService {
@@ -27,24 +27,33 @@ public class PasswordResetService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Generate a random 4-digit code
+    private String generateOtpCode() {
+        Random random = new Random();
+        int otp = 1000 + random.nextInt(9000);
+        return String.valueOf(otp);
+    }
+
     public void sendResetCode(String email) {
         Users user = userRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("No user found with email: " + email));
-        String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = new PasswordResetToken(token, user, LocalDateTime.now().plusMinutes(30));
+        String code = generateOtpCode();
+        PasswordResetToken resetToken = new PasswordResetToken(code, user, LocalDateTime.now().plusMinutes(30));
         tokenRepository.save(resetToken);
 
-        String resetUrl = "https://your-flutter-app/reset-password?token=" + token;
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
-        message.setSubject("Password Reset Request");
-        message.setText("Reset your password using this link (valid for 30 minutes): " + resetUrl);
+        message.setSubject("Password Reset Code");
+        message.setText("Your password reset code is: " + code + "\nThis code is valid for 30 minutes.");
 
         mailSender.send(message);
     }
 
-    public boolean resetPassword(String token, String newPassword) {
-        Optional<PasswordResetToken> resetTokenOpt = tokenRepository.findByToken(token);
+    public boolean resetPassword(String email, String code, String newPassword, String confirmPassword) {
+        if (!newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
+        Optional<PasswordResetToken> resetTokenOpt = tokenRepository.findByUserEmailAndCode(email, code);
         if (resetTokenOpt.isPresent()) {
             PasswordResetToken resetToken = resetTokenOpt.get();
             if (resetToken.getExpiry().isAfter(LocalDateTime.now())) {
