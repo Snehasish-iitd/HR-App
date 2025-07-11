@@ -2,17 +2,31 @@ package com.HR.app.Security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.PostConstruct;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
+
+
 @Service
 public class JwtService {
-    private static final SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
+    @Value("${jwt.secret}")
+    private String secret;
+
+    private SecretKey secretKey;
     private static final long EXPIRATION = 30L * 24 * 60 * 60 * 1000; // 30 days
+
+    @PostConstruct
+    public void init() {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
@@ -20,7 +34,7 @@ public class JwtService {
             .claim("roles", userDetails.getAuthorities())
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
-            .signWith(SECRET_KEY)
+            .signWith(secretKey)
             .compact();
     }
 
@@ -30,7 +44,7 @@ public class JwtService {
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = Jwts.parserBuilder()
-            .setSigningKey(SECRET_KEY)
+            .setSigningKey(secretKey)
             .build()
             .parseClaimsJws(token)
             .getBody();
@@ -46,4 +60,3 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 }
-

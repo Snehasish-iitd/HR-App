@@ -27,31 +27,33 @@ public class ReimbursementService {
     private UserRepository userRepository;
 
     @Transactional
-    public Reimbursement fileReimbursement(String userEmail, MultipartFile file, Double value, ReimbursementType type, String comments) throws IOException {
-        Users user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+public Reimbursement fileReimbursement(String userEmail, MultipartFile file, Double value, ReimbursementType type, String comments) throws IOException {
+    Users user = userRepository.findByEmail(userEmail)
+        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    Reimbursement reimbursement = new Reimbursement();
+    reimbursement.setUser(user);
+    reimbursement.setFileData(file.getBytes());
+    reimbursement.setFileName(file.getOriginalFilename());
+    reimbursement.setFileType(file.getContentType());
+    reimbursement.setValue(value);
+    reimbursement.setType(type);
+    reimbursement.setComments(comments);
+    reimbursement.setStatus(ReimbursementStatus.PENDING);
+    return reimbursementRepository.save(reimbursement);
+}
 
-        Reimbursement reimbursement = new Reimbursement();
-        reimbursement.setUser(user);
-        reimbursement.setFileData(file.getBytes());
-        reimbursement.setFileName(file.getOriginalFilename());
-        reimbursement.setFileType(file.getContentType());
-        reimbursement.setValue(value);
-        reimbursement.setType(type);
-        reimbursement.setComments(comments);
-        reimbursement.setStatus(ReimbursementStatus.PENDING);
 
-        return reimbursementRepository.save(reimbursement);
-    }
-
+    @Transactional(readOnly = true)
     public List<Reimbursement> getMyHistory(String userEmail) {
         return reimbursementRepository.findByUserEmail(userEmail);
     }
 
+    @Transactional(readOnly = true)
     public List<Reimbursement> getPendingApprovals() {
         return reimbursementRepository.findByStatus(ReimbursementStatus.PENDING);
     }
 
+    @Transactional(readOnly = true)
     public Optional<Reimbursement> getReimbursementById(UUID id) {
         return reimbursementRepository.findById(id);
     }

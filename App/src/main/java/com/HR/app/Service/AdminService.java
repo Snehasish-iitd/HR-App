@@ -43,6 +43,7 @@ public class AdminService {
         // Assign role and save user
         Users user = new Users();
         user.setEmail(request.getEmail());
+        user.setName(request.getName());
         user.setPassword(hashedPassword);
         user.setRole(request.getRole());
 

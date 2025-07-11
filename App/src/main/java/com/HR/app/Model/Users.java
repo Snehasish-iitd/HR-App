@@ -3,6 +3,7 @@ package com.HR.app.Model;
 import java.util.UUID;
 
 import com.HR.app.Enums.RoleEnum;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,6 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "users")
 public class Users {

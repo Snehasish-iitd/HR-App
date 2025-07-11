@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.HR.app.DTO.ReimbursementDTO;
 import com.HR.app.Enums.ReimbursementType;
 import com.HR.app.Model.Reimbursement;
 import com.HR.app.Service.ReimbursementService;
@@ -23,18 +24,20 @@ public class ReimbursementController {
     private ReimbursementService reimbursementService;
 
     // 1. File a reimbursement
-    @PostMapping
-    public ResponseEntity<?> fileReimbursement(
-            Authentication authentication,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("value") Double value,
-            @RequestParam("type") ReimbursementType type,
-            @RequestParam(value = "comments", required = false) String comments
-    ) throws IOException {
-        String userEmail = authentication.getName();
-        Reimbursement reimbursement = reimbursementService.fileReimbursement(userEmail, file, value, type, comments);
-        return ResponseEntity.ok(reimbursement);
-    }
+   @PostMapping
+public ResponseEntity<?> fileReimbursement(
+        Authentication authentication,
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("value") Double value,
+        @RequestParam("type") ReimbursementType type,
+        @RequestParam(value = "comments", required = false) String comments
+) throws IOException {
+    String userEmail = authentication.getName();
+    Reimbursement reimbursement = reimbursementService.fileReimbursement(userEmail, file, value, type, comments);
+    return ResponseEntity.ok(new ReimbursementDTO(reimbursement));
+}
+
+    
 
     // 2. Get my reimbursement history
     @GetMapping("/history")

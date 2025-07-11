@@ -15,7 +15,7 @@ public class PasswordResetToken {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String token;
+    private String code;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -24,8 +24,8 @@ public class PasswordResetToken {
     @Column(nullable = false)
     private LocalDateTime expiry;
 
-    public PasswordResetToken(String token, Users user, LocalDateTime expiry) {
-        this.token = token;
+    public PasswordResetToken(String code, Users user, LocalDateTime expiry) {
+        this.code = code;
         this.user = user;
         this.expiry = expiry;
     }
