@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import 'approve.dart';
 
 class ReimbursementPage extends StatefulWidget {
   const ReimbursementPage({Key? key}) : super(key: key);
@@ -105,7 +106,7 @@ class _ReimbursementPageState extends State<ReimbursementPage> {
                             ),
                             textStyle: TextStyle(fontSize: 14),
                           ),
-                          icon: Icon(Icons.attach_file, size: 18),
+                          icon: Icon(Icons.attach_file, size: 18 , color: const Color.fromARGB(255, 0, 0, 0),),
                           label: Text('Attach File'),
                           onPressed: () async {
                             await _pickFile();
@@ -124,7 +125,7 @@ class _ReimbursementPageState extends State<ReimbursementPage> {
                             ),
                             textStyle: TextStyle(fontSize: 14),
                           ),
-                          icon: Icon(Icons.camera_alt_outlined, size: 18),
+                          icon: Icon(Icons.camera_alt_outlined, size: 18 , color: const Color.fromARGB(255, 0, 0, 0),),
                           label: Text('Click Picture'),
                           onPressed: () async {
                             await _pickCamera();
@@ -333,7 +334,7 @@ class _ReimbursementPageState extends State<ReimbursementPage> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              backgroundColor: Colors.white.withOpacity(0.95),
+                              backgroundColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.95),
                               foregroundColor: Colors.black,
                               padding: EdgeInsets.symmetric(vertical: 16),
                             ),
@@ -361,7 +362,10 @@ class _ReimbursementPageState extends State<ReimbursementPage> {
                               padding: EdgeInsets.symmetric(vertical: 16),
                             ),
                             onPressed: () {
-                              // TODO: Approve logic (if admin)
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => ApprovePage()),
+                            );
                             },
                             child: Text(
                               'Approve',

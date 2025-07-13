@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import "forgotpassword.dart";
-import "home.dart";
+import 'forgotpassword.dart';
+import 'home.dart';
+import 'apiservice.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -9,6 +10,11 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool rememberMe = false;
+  final ApiService _apiService = ApiService();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: Stack(
           children: [
-            // Visible geometric pattern overlay
+            // Geometric pattern overlay
             Positioned(
               top: -40,
               left: -40,
@@ -125,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                       // Gradient-bordered Card with internal pattern
                       Container(
                         width: double.infinity,
-                        padding: EdgeInsets.all(2.5), // Border thickness
+                        padding: EdgeInsets.all(2.5),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -136,7 +142,8 @@ class _LoginPageState extends State<LoginPage> {
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: Color.fromARGB(255, 10, 69, 83), width: 2.5), 
+                          border: Border.all(
+                              color: Color.fromARGB(255, 10, 69, 83), width: 2.5),
                         ),
                         child: Container(
                           padding: EdgeInsets.all(26),
@@ -150,7 +157,6 @@ class _LoginPageState extends State<LoginPage> {
                                 offset: Offset(0, 16),
                               ),
                             ],
-                            // Subtle internal pattern using gradient
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.97),
@@ -162,41 +168,51 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           child: Column(
                             children: [
-                              // Email Field with minimalistic icon
+                              // Email Field
                               TextField(
+                                controller: _emailController,
                                 decoration: InputDecoration(
                                   labelText: 'Email',
                                   labelStyle: TextStyle(color: Colors.black87),
-                                  prefixIcon: Icon(Icons.mail_outline, color: Color(0xFF2193b0), size: 22),
+                                  prefixIcon: Icon(Icons.mail_outline,
+                                      color: Color(0xFF2193b0), size: 22),
                                   filled: true,
-                                  fillColor: Color(0xFFe0eafc).withOpacity(0.18),
+                                  fillColor:
+                                      Color(0xFFe0eafc).withOpacity(0.18),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Color(0xFF2193b0)),
+                                    borderSide:
+                                        BorderSide(color: Color(0xFF2193b0)),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Color(0xFF2193b0), width: 2),
+                                    borderSide: BorderSide(
+                                        color: Color(0xFF2193b0), width: 2),
                                   ),
                                 ),
                                 keyboardType: TextInputType.emailAddress,
                               ),
                               SizedBox(height: 20),
-                              // Password Field with minimalistic icon
+                              // Password Field
                               TextField(
+                                controller: _passwordController,
                                 decoration: InputDecoration(
                                   labelText: 'Password',
                                   labelStyle: TextStyle(color: Colors.black87),
-                                  prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2193b0), size: 22),
+                                  prefixIcon: Icon(Icons.lock_outline,
+                                      color: Color(0xFF2193b0), size: 22),
                                   filled: true,
-                                  fillColor: Color(0xFFe0eafc).withOpacity(0.18),
+                                  fillColor:
+                                      Color(0xFFe0eafc).withOpacity(0.18),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
+                                    borderSide:
+                                        BorderSide(color: Color(0xFF2193b0)),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Color(0xFF2193b0), width: 2),
+                                    borderSide: BorderSide(
+                                        color: Color(0xFF2193b0), width: 2),
                                   ),
                                 ),
                                 obscureText: true,
@@ -204,49 +220,65 @@ class _LoginPageState extends State<LoginPage> {
                               SizedBox(height: 14),
                               // Remember Me & Forgot Password Row
                               Row(
-                                    children: [
-                                      Checkbox(
-                                        value: rememberMe,
-                                        activeColor: Color(0xFF2193b0),
-                                        onChanged: (val) {
-                                          setState(() {
-                                            rememberMe = val ?? false;
-                                          });
-                                        },
-                                      ),
-                                      SizedBox(width: 4), // Reduces space between checkbox and text
-                                      Text(
-                                        'Remember me',
-                                        style: TextStyle(color: Colors.black87),
-                                      ),
-                                      Spacer(),
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => ForgotPasswordPage(),
-                                            ),
-                                          );
-                                        },
-                                        child: Row(
-                                          children: [
-                                            SizedBox(width: 4),
-                                            Text(
-                                              'Forgot password?',
-                                              style: TextStyle(
-                                                color: Color.fromARGB(255, 0, 0, 0),
-                                                decoration: TextDecoration.underline,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                children: [
+                                  Checkbox(
+                                    value: rememberMe,
+                                    activeColor: Color(0xFF2193b0),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        rememberMe = val ?? false;
+                                      });
+                                    },
                                   ),
-                              SizedBox(height: 24),
-                              // Sign In Button with minimal icon
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Remember me',
+                                    style: TextStyle(color: Colors.black87),
+                                  ),
+                                  Spacer(),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                ForgotPasswordPage()),
+                                      );
+                                    },
+                                    child: Row(
+                                      children: [
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Forgot password?',
+                                          style: TextStyle(
+                                            color:
+                                                Color.fromARGB(255, 0, 0, 0),
+                                            decoration:
+                                                TextDecoration.underline,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              if (_isLoading)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              if (_errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              SizedBox(height: 12),
+                              // Sign In Button
                               SizedBox(
                                 width: double.infinity,
                                 height: 52,
@@ -262,7 +294,8 @@ class _LoginPageState extends State<LoginPage> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  icon: Icon(Icons.login, color: Colors.white, size: 22),
+                                  icon: Icon(Icons.login,
+                                      color: Colors.white, size: 22),
                                   label: Text(
                                     'SIGN IN',
                                     style: TextStyle(
@@ -270,13 +303,37 @@ class _LoginPageState extends State<LoginPage> {
                                       letterSpacing: 1.3,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => HomePage(),
-                                      ),
-                                    );
+                                  onPressed: () async {
+                                    setState(() {
+                                      _isLoading = true;
+                                      _errorMessage = null;
+                                    });
+
+                                    final email =
+                                        _emailController.text.trim();
+                                    final password =
+                                        _passwordController.text;
+
+                                    final jwt = await _apiService.login(
+                                        email, password);
+
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
+
+                                    if (jwt != null) {
+                                      // TODO: Save JWT securely if needed
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => HomePage()),
+                                      );
+                                    } else {
+                                      setState(() {
+                                        _errorMessage =
+                                            'Invalid email or password';
+                                      });
+                                    }
                                   },
                                 ),
                               ),
