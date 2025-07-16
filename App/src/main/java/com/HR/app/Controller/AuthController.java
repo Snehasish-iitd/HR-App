@@ -19,8 +19,8 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final CustomUserDetailsService userDetailsService;
+    private final AuthenticationManager authenticationManager ;
+    private final CustomUserDetailsService userDetailsService ;
     private final JwtService jwtService;
     private final PasswordResetService passwordResetService;
 

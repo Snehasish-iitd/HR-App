@@ -8,7 +8,7 @@ import lombok.*;
 
 public class ResetPasswordRequest {
     private String email;
-    private String code; // 4-digit OTP
+    private String code; 
     private String newPassword;
     private String confirmPassword;   
 }
