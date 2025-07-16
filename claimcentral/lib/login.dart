@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'forgotpassword.dart';
-import 'home.dart';
 import 'apiservice.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -16,10 +17,43 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  Future<void> _handleLogin() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() => _errorMessage = 'Please enter email and password');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = await _apiService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      // Navigate based on role
+      if (user.roles.contains('ADMIN')) {
+        Navigator.pushReplacementNamed(context, '/adminHome');
+      } else if (user.roles.contains('MANAGER')) {
+        Navigator.pushReplacementNamed(context, '/managerHome');
+      } else if (user.roles.contains('EMPLOYEE')) {
+        Navigator.pushReplacementNamed(context, '/employeeHome');
+      } else {
+        setState(() => _errorMessage = 'Unknown user role');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Invalid email or password');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -27,8 +61,8 @@ class _LoginPageState extends State<LoginPage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFFe0eafc), // Sky blue
-              Color.fromARGB(255, 22, 98, 117), // Deep blue
+              Color(0xFFe0eafc),
+              Color.fromARGB(255, 22, 98, 117),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -36,7 +70,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: Stack(
           children: [
-            // Geometric pattern overlay
             Positioned(
               top: -40,
               left: -40,
@@ -92,7 +125,6 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Greeting Text with minimalistic icon
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Row(
@@ -128,7 +160,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       SizedBox(height: 36),
-                      // Gradient-bordered Card with internal pattern
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(2.5),
@@ -168,7 +199,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           child: Column(
                             children: [
-                              // Email Field
                               TextField(
                                 controller: _emailController,
                                 decoration: InputDecoration(
@@ -177,12 +207,10 @@ class _LoginPageState extends State<LoginPage> {
                                   prefixIcon: Icon(Icons.mail_outline,
                                       color: Color(0xFF2193b0), size: 22),
                                   filled: true,
-                                  fillColor:
-                                      Color(0xFFe0eafc).withOpacity(0.18),
+                                  fillColor: Color(0xFFe0eafc).withOpacity(0.18),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide:
-                                        BorderSide(color: Color(0xFF2193b0)),
+                                    borderSide: BorderSide(color: Color(0xFF2193b0)),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -193,7 +221,6 @@ class _LoginPageState extends State<LoginPage> {
                                 keyboardType: TextInputType.emailAddress,
                               ),
                               SizedBox(height: 20),
-                              // Password Field
                               TextField(
                                 controller: _passwordController,
                                 decoration: InputDecoration(
@@ -202,12 +229,10 @@ class _LoginPageState extends State<LoginPage> {
                                   prefixIcon: Icon(Icons.lock_outline,
                                       color: Color(0xFF2193b0), size: 22),
                                   filled: true,
-                                  fillColor:
-                                      Color(0xFFe0eafc).withOpacity(0.18),
+                                  fillColor: Color(0xFFe0eafc).withOpacity(0.18),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide:
-                                        BorderSide(color: Color(0xFF2193b0)),
+                                    borderSide: BorderSide(color: Color(0xFF2193b0)),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -218,7 +243,6 @@ class _LoginPageState extends State<LoginPage> {
                                 obscureText: true,
                               ),
                               SizedBox(height: 14),
-                              // Remember Me & Forgot Password Row
                               Row(
                                 children: [
                                   Checkbox(
@@ -241,8 +265,7 @@ class _LoginPageState extends State<LoginPage> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (context) =>
-                                                ForgotPasswordPage()),
+                                            builder: (context) => ForgotPasswordPage()),
                                       );
                                     },
                                     child: Row(
@@ -251,10 +274,8 @@ class _LoginPageState extends State<LoginPage> {
                                         Text(
                                           'Forgot password?',
                                           style: TextStyle(
-                                            color:
-                                                Color.fromARGB(255, 0, 0, 0),
-                                            decoration:
-                                                TextDecoration.underline,
+                                            color: Color.fromARGB(255, 0, 0, 0),
+                                            decoration: TextDecoration.underline,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -278,7 +299,6 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ),
                               SizedBox(height: 12),
-                              // Sign In Button
                               SizedBox(
                                 width: double.infinity,
                                 height: 52,
@@ -294,8 +314,7 @@ class _LoginPageState extends State<LoginPage> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  icon: Icon(Icons.login,
-                                      color: Colors.white, size: 22),
+                                  icon: Icon(Icons.login, color: Colors.white, size: 22),
                                   label: Text(
                                     'SIGN IN',
                                     style: TextStyle(
@@ -303,38 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                                       letterSpacing: 1.3,
                                     ),
                                   ),
-                                  onPressed: () async {
-                                    setState(() {
-                                      _isLoading = true;
-                                      _errorMessage = null;
-                                    });
-
-                                    final email =
-                                        _emailController.text.trim();
-                                    final password =
-                                        _passwordController.text;
-
-                                    final jwt = await _apiService.login(
-                                        email, password);
-
-                                    setState(() {
-                                      _isLoading = false;
-                                    });
-
-                                    if (jwt != null) {
-                                      // TODO: Save JWT securely if needed
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => HomePage()),
-                                      );
-                                    } else {
-                                      setState(() {
-                                        _errorMessage =
-                                            'Invalid email or password';
-                                      });
-                                    }
-                                  },
+                                  onPressed: _handleLogin,
                                 ),
                               ),
                             ],
@@ -350,5 +338,12 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

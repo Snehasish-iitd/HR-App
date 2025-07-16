@@ -6,6 +6,8 @@ void main() {
 }
 
 class HRManagementApp extends StatelessWidget {
+  const HRManagementApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

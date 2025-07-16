@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AllRequestPage extends StatelessWidget {
-  AllRequestPage({Key? key}) : super(key: key);
+  const AllRequestPage({super.key});
 
   // Sample data for demonstration
   final List<Map<String, dynamic>> requests = const [

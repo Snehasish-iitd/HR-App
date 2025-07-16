@@ -3,7 +3,7 @@ import 'allrequests.dart';
 import 'fullapprovedhistory.dart';
 
 class ApprovePage extends StatelessWidget {
-  const ApprovePage({Key? key}) : super(key: key);
+  const ApprovePage({super.key});
 
   // Sample data for demonstration
   final List<Map<String, dynamic>> requests = const [

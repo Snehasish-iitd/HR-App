@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class FullApprovedHistoryPage extends StatefulWidget {
-  const FullApprovedHistoryPage({Key? key}) : super(key: key);
+  const FullApprovedHistoryPage({super.key});
 
   @override
   State<FullApprovedHistoryPage> createState() => _FullApprovedHistoryPageState();
