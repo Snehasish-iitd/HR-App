@@ -13,6 +13,6 @@ public class CreateUserRequest {
     private String name;
     private String password; 
     private RoleEnum role; 
-
+    private String EID;
 }
 

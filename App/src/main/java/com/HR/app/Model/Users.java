@@ -21,6 +21,9 @@ public class Users {
     @org.hibernate.annotations.UuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
+
+    @Column(name="employeeid", updatable=false, nullable=false)
+    private String EID;
    
     @Column(name = "email", nullable = false, unique = true)
     private String email;
@@ -30,6 +33,13 @@ public class Users {
 
     @Column(name = "password", nullable = false)
     private String password;
+
+    @Column(name="department")
+    private String department;
+
+    @Column(name = "manager_id")  
+    private String managerId; 
+    
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
