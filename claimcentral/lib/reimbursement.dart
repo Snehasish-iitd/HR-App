@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'approve.dart';
 
 class ReimbursementPage extends StatefulWidget {
-  const ReimbursementPage({Key? key}) : super(key: key);
+  const ReimbursementPage({super.key});
 
   @override
   State<ReimbursementPage> createState() => _ReimbursementPageState();

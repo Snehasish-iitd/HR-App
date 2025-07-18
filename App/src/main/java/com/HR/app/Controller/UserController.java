@@ -1,16 +1,30 @@
 package com.HR.app.Controller;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.HR.app.Enums.RoleEnum;
 import com.HR.app.Model.Users;
 import com.HR.app.Service.UserService;
 
-import java.util.List;
-import java.util.UUID;
-
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@Getter@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @RestController
 @RequestMapping("/api/admin/users/employee")
 public class UserController {
