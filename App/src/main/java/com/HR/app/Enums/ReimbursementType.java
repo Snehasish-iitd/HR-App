@@ -2,8 +2,12 @@ package com.HR.app.Enums;
 
 public enum ReimbursementType {
     TRAVEL,
-    FOOD,
-    ACCOMMODATION,
+    MEALS,
+    OFFICESUPPLIES,
+    SOFTWARE,
+    TRAINING,
+    CLIENT,
+    COMMUNICATIONS,
     OTHER
 }
 

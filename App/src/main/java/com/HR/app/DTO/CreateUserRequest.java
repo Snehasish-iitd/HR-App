@@ -14,5 +14,8 @@ public class CreateUserRequest {
     private String password; 
     private RoleEnum role; 
     private String EID;
+    private String department;
+    private String managerId;
+    
 }
 

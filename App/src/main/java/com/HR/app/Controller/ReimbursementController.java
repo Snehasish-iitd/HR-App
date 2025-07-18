@@ -14,6 +14,7 @@ import com.HR.app.Service.ReimbursementService;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -24,20 +25,18 @@ public class ReimbursementController {
     private ReimbursementService reimbursementService;
 
     // 1. File a reimbursement
-   @PostMapping
-public ResponseEntity<?> fileReimbursement(
-        Authentication authentication,
-        @RequestParam("file") MultipartFile file,
-        @RequestParam("value") Double value,
-        @RequestParam("type") ReimbursementType type,
-        @RequestParam(value = "comments", required = false) String comments
-) throws IOException {
-    String userEmail = authentication.getName();
-    Reimbursement reimbursement = reimbursementService.fileReimbursement(userEmail, file, value, type, comments);
-    return ResponseEntity.ok(new ReimbursementDTO(reimbursement));
-}
-
-    
+    @PostMapping("/submit")
+    public ResponseEntity<?> fileReimbursement(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("value") Double value,
+            @RequestParam("type") ReimbursementType type,
+            @RequestParam(value = "comments", required = false) String comments
+    ) throws IOException {
+        String userEmail = authentication.getName();
+        Reimbursement reimbursement = reimbursementService.fileReimbursement(userEmail, file, value, type, comments);
+        return ResponseEntity.ok(new ReimbursementDTO(reimbursement));
+    }
 
     // 2. Get my reimbursement history
     @GetMapping("/history")
@@ -59,12 +58,29 @@ public ResponseEntity<?> fileReimbursement(
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
     public ResponseEntity<?> getReimbursementById(@PathVariable UUID id) {
-        return reimbursementService.getReimbursementById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        Optional<Reimbursement> result = reimbursementService.getReimbursementById(id);
+        return result.map(ResponseEntity::ok)
+                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 5. Approve a reimbursement (admin, HR, manager)
+    // 5. Download reimbursement file (User or authorized roles)
+    @GetMapping("/{id}/file")
+    @PreAuthorize("isAuthenticated()") // adjust this as per your policy
+    public ResponseEntity<byte[]> downloadReimbursementFile(@PathVariable UUID id) throws IOException {
+        byte[] fileData = reimbursementService.getReimbursementFile(id);
+        // Add headers if you want (Content-Type, Content-Disposition)
+        return ResponseEntity.ok(fileData);
+    }
+
+    // 6. Delete reimbursement file (User or authorized roles)
+    @DeleteMapping("/{id}/file")
+    @PreAuthorize("isAuthenticated()") // adjust & tighten as needed
+    public ResponseEntity<?> deleteReimbursementFile(@PathVariable UUID id) throws IOException {
+        reimbursementService.deleteReimbursementFile(id);
+        return ResponseEntity.ok("File deleted successfully.");
+    }
+
+    // 7. Approve a reimbursement (admin, HR, manager)
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
     public ResponseEntity<?> approveReimbursement(@PathVariable UUID id) {
@@ -72,7 +88,7 @@ public ResponseEntity<?> fileReimbursement(
         return ResponseEntity.ok("Reimbursement approved.");
     }
 
-    // 6. Deny a reimbursement (admin, HR, manager)
+    // 8. Deny a reimbursement (admin, HR, manager)
     @PostMapping("/{id}/deny")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
     public ResponseEntity<?> denyReimbursement(@PathVariable UUID id) {
@@ -80,4 +96,3 @@ public ResponseEntity<?> fileReimbursement(
         return ResponseEntity.ok("Reimbursement denied.");
     }
 }
-
