@@ -9,22 +9,25 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
+@Slf4j
 @Service
 public class GoogleOAuthDriveStorageStrategy implements FileStorageStrategy {
 
     private static final String APPLICATION_NAME = "HR Reimbursement App";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    // The Google Drive account email you connected as the "company" drive:
     private static final String COMPANY_USER_ID = "snehasishbala52@gmail.com";
 
     private final GoogleOAuthFlowService googleOAuthFlowService;
@@ -46,38 +49,61 @@ public class GoogleOAuthDriveStorageStrategy implements FileStorageStrategy {
         } catch (GeneralSecurityException | IOException e) {
             throw new IOException("Could not create Google Drive service: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new IOException("Unexpected error initializing Google Drive: " + e.getMessage(), e);
+            throw new IOException("Failed to load Google OAuth credential: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public String uploadFile(MultipartFile file, String employeeName, String reimbursementType, LocalDateTime timestamp) throws IOException {
+    public String uploadFile(MultipartFile file, String employeeName, String reimbursementType, LocalDate expenseDate)
+            throws IOException {
+        log.info("Starting upload for: {} (type: {}, user: {}, date: {})",
+                file.getOriginalFilename(), reimbursementType, employeeName, expenseDate);
+
         Drive driveService = getDriveService();
+        log.info("Google Drive service initialized successfully");
 
         String rootFolderId = createOrGetFolder(driveService, "reimbursements", null);
-        String financialYearFolderId = createOrGetFolder(driveService, getFinancialYearFolderName(timestamp), rootFolderId);
-        String monthFolderId = createOrGetFolder(driveService, getMonthFolderName(timestamp), financialYearFolderId);
-        String fileName = generateFileName(employeeName, reimbursementType, timestamp);
+        log.debug("Root folder ID: {}", rootFolderId);
 
-        File fileMetadata = new File();
-        fileMetadata.setName(fileName);
-        fileMetadata.setParents(Collections.singletonList(monthFolderId));
+        String financialYearFolderName = getFinancialYearFolderName(expenseDate);
+        String financialYearFolderId = createOrGetFolder(driveService, financialYearFolderName, rootFolderId);
+        log.debug("Financial year folder '{}' ID: {}", financialYearFolderName, financialYearFolderId);
+
+        String monthFolderName = getMonthFolderName(expenseDate);
+        String monthFolderId = createOrGetFolder(driveService, monthFolderName, financialYearFolderId);
+        log.debug("Month folder '{}' ID: {}", monthFolderName, monthFolderId);
+
+        String fileName = generateFileName(employeeName, reimbursementType, expenseDate);
+        log.info("Preparing to upload as: {}", fileName);
 
         java.io.File tempFile = convertMultipartFileToFile(file);
+        log.debug("Temporary file created at: {}", tempFile.getAbsolutePath());
 
         try {
+            File fileMetadata = new File();
+            fileMetadata.setName(fileName);
+            fileMetadata.setParents(Collections.singletonList(monthFolderId));
+
             FileContent mediaContent = new FileContent(file.getContentType(), tempFile);
             File uploadedFile = driveService.files().create(fileMetadata, mediaContent)
                     .setFields("id")
                     .execute();
+            log.info("Successfully uploaded to Google Drive, file ID: {}", uploadedFile.getId());
             return uploadedFile.getId();
+        } catch (Exception e) {
+            log.error("Failed to upload file to Google Drive: {}", e.getMessage(), e);
+            throw new IOException("Failed to upload file to Google Drive: " + e.getMessage(), e);
         } finally {
-            tempFile.delete();
+            boolean deleted = tempFile.delete();
+            if (!deleted) {
+                log.warn("Could not delete temporary file: {}", tempFile.getAbsolutePath());
+            }
         }
     }
 
     @Override
     public byte[] downloadFile(String fileId) throws IOException {
+        log.info("Downloading file with ID: {}", fileId);
         Drive driveService = getDriveService();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream);
@@ -86,12 +112,14 @@ public class GoogleOAuthDriveStorageStrategy implements FileStorageStrategy {
 
     @Override
     public void deleteFile(String fileId) throws IOException {
+        log.info("Deleting file with ID: {}", fileId);
         Drive driveService = getDriveService();
         driveService.files().delete(fileId).execute();
     }
 
     @Override
     public boolean fileExists(String fileId) throws IOException {
+        log.debug("Checking existence of file with ID: {}", fileId);
         Drive driveService = getDriveService();
         try {
             driveService.files().get(fileId).execute();
@@ -101,17 +129,12 @@ public class GoogleOAuthDriveStorageStrategy implements FileStorageStrategy {
         }
     }
 
-    // ---------- Utility Methods ----------
-
     private String createOrGetFolder(Drive driveService, String folderName, String parentId) throws IOException {
         String query = "name='" + folderName + "' and mimeType='application/vnd.google-apps.folder'";
         if (parentId != null) {
             query += " and '" + parentId + "' in parents";
         }
-        FileList result = driveService.files().list()
-                .setQ(query)
-                .setSpaces("drive")
-                .execute();
+        FileList result = driveService.files().list().setQ(query).setSpaces("drive").execute();
 
         if (!result.getFiles().isEmpty()) {
             return result.getFiles().get(0).getId();
@@ -123,15 +146,13 @@ public class GoogleOAuthDriveStorageStrategy implements FileStorageStrategy {
         if (parentId != null) {
             fileMetadata.setParents(Collections.singletonList(parentId));
         }
-        File folder = driveService.files().create(fileMetadata)
-                .setFields("id")
-                .execute();
+        File folder = driveService.files().create(fileMetadata).setFields("id").execute();
         return folder.getId();
     }
 
-    private String getFinancialYearFolderName(LocalDateTime timestamp) {
-        int year = timestamp.getYear();
-        int month = timestamp.getMonthValue();
+    private String getFinancialYearFolderName(LocalDate expenseDate) {
+        int year = expenseDate.getYear();
+        int month = expenseDate.getMonthValue();
         if (month >= 4) {
             return "fin_year_" + year + "_" + (year + 1);
         } else {
@@ -139,15 +160,15 @@ public class GoogleOAuthDriveStorageStrategy implements FileStorageStrategy {
         }
     }
 
-    private String getMonthFolderName(LocalDateTime timestamp) {
-        String monthNumber = String.format("%02d", timestamp.getMonthValue());
-        String monthName = timestamp.getMonth().name().toLowerCase();
+    private String getMonthFolderName(LocalDate expenseDate) {
+        String monthNumber = String.format("%02d", expenseDate.getMonthValue());
+        String monthName = expenseDate.getMonth().name().toLowerCase();
         String capitalizedMonth = monthName.substring(0, 1).toUpperCase() + monthName.substring(1);
         return monthNumber + "_" + capitalizedMonth;
     }
 
-    private String generateFileName(String employeeName, String reimbursementType, LocalDateTime timestamp) {
-        String date = timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    private String generateFileName(String employeeName, String reimbursementType, LocalDate expenseDate) {
+        String date = expenseDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         String sanitizedEmployeeName = employeeName.replaceAll("[^a-zA-Z0-9._-]", "_");
         String sanitizedReimbursementType = reimbursementType.replaceAll("[^a-zA-Z0-9._-]", "_");
         return sanitizedEmployeeName + "-" + sanitizedReimbursementType + "-" + date;

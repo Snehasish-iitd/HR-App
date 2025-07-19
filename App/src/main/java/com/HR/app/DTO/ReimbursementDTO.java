@@ -1,5 +1,7 @@
 package com.HR.app.DTO;
 
+import java.time.LocalDate;
+
 import java.util.UUID;
 
 import com.HR.app.Enums.ReimbursementStatus;
@@ -18,6 +20,7 @@ public class ReimbursementDTO {
     private String fileType;    // MIME type (optional but useful)
     private Double value;
     private ReimbursementType type;
+    private LocalDate expenseDate;
     private String comments;
     private ReimbursementStatus status;
 
@@ -28,6 +31,7 @@ public class ReimbursementDTO {
         this.fileType = r.getFileType();
         this.value = r.getValue();
         this.type = r.getType();
+        this.expenseDate=r.getExpenseDate();
         this.comments = r.getComments();
         this.status = r.getStatus();
     }

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,7 @@ public class ReimbursementService {
 
     @Transactional
     public Reimbursement fileReimbursement(String userEmail, MultipartFile file, Double value,
-                                           ReimbursementType type, String comments) throws IOException {
+                                           ReimbursementType type,LocalDate expenseDate, String comments) throws IOException {
         Users user = userRepository.findByEmail(userEmail)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -41,7 +42,7 @@ public class ReimbursementService {
 
         // No userId argument needed!
         String fileId = storageStrategy.uploadFile(
-                file, user.getName(), type.name(), LocalDateTime.now()
+                file, user.getName(), type.name(), expenseDate
         );
 
         Reimbursement reimbursement = new Reimbursement();
@@ -51,6 +52,7 @@ public class ReimbursementService {
         reimbursement.setFileType(file.getContentType());
         reimbursement.setValue(value);
         reimbursement.setType(type);
+        reimbursement.setExpenseDate(expenseDate);
         reimbursement.setComments(comments);
         reimbursement.setStatus(ReimbursementStatus.PENDING);
 
@@ -91,18 +93,21 @@ public class ReimbursementService {
     }
 
     @Transactional
-    public void approveReimbursement(UUID id) {
+    public void approveReimbursement(UUID id, Users approver) {
         Reimbursement reimbursement = reimbursementRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
         reimbursement.setStatus(ReimbursementStatus.APPROVED);
+        reimbursement.setApprovedBy(approver);
+        reimbursement.setApprovedDate(LocalDate.now());
         reimbursementRepository.save(reimbursement);
     }
 
     @Transactional
-    public void denyReimbursement(UUID id) {
+    public void denyReimbursement(UUID id,String reason) {
         Reimbursement reimbursement = reimbursementRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
         reimbursement.setStatus(ReimbursementStatus.DENIED);
+        reimbursement.setRejectionReason(reason);
         reimbursementRepository.save(reimbursement);
     }
 }

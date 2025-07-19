@@ -51,10 +51,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 // Manager role required to approve reimbursements
-                .requestMatchers("/api/reimbursements/approve").hasRole("MANAGER")
-
+                
                 // Employee role required to submit reimbursements
-                .requestMatchers("/api/reimbursements/submit").hasRole("EMPLOYEE")
+                .requestMatchers("/api/reimbursements/submit").hasAnyRole("EMPLOYEE","ADMIN","HR","MANAGER")
 
                 // Admin, HR or Manager roles for other reimbursements endpoints
                 .requestMatchers("/api/reimbursements/**").hasAnyRole("ADMIN", "HR", "MANAGER")
