@@ -49,7 +49,7 @@ public class UserService {
                     user.setName(updatedUser.getName());
                     user.setEmail(updatedUser.getEmail());
                     user.setRole(updatedUser.getRole());
-                    user.setEID(updatedUser.getEID());
+                    user.setEid(updatedUser.getEid());
                     user.setDepartment(updatedUser.getDepartment());
                     // If a new password is provided, hash and save it
                     if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {

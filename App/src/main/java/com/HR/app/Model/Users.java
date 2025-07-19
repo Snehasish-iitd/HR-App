@@ -37,7 +37,7 @@ public class Users {
 
     @JsonProperty("eid")
     @Column(name = "employeeid", updatable = false, nullable = false)
-    private String EID;
+    private String eid;
 
     @Column(name = "email", nullable = false)
     private String email;

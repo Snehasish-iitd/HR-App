@@ -8,53 +8,44 @@ import com.HR.app.Repository.ReimbursementRepository;
 import com.HR.app.Repository.UserRepository;
 import com.HR.app.Service.Storage.FileStorageFactory;
 import com.HR.app.Service.Storage.FileStorageStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ReimbursementService {
-
-    @Autowired
-    private ReimbursementRepository reimbursementRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private FileStorageFactory storageFactory;
+    private final ReimbursementRepository reimbursementRepository;
+    private final UserRepository userRepository;
+    private final FileStorageFactory storageFactory;
 
     @Transactional
     public Reimbursement fileReimbursement(String userEmail, MultipartFile file, Double value,
-                                           ReimbursementType type,LocalDate expenseDate, String comments) throws IOException {
+                                          ReimbursementType type, LocalDate expenseDate, String comments) throws IOException {
         Users user = userRepository.findByEmail(userEmail)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         FileStorageStrategy storageStrategy = storageFactory.getStorageStrategy();
+        String fileId = storageStrategy.uploadFile(file, user.getName(), type.name(), expenseDate);
 
-        // No userId argument needed!
-        String fileId = storageStrategy.uploadFile(
-                file, user.getName(), type.name(), expenseDate
-        );
-
-        Reimbursement reimbursement = new Reimbursement();
-        reimbursement.setUser(user);
-        reimbursement.setFileId(fileId);
-        reimbursement.setFilePath(file.getOriginalFilename());
-        reimbursement.setFileType(file.getContentType());
-        reimbursement.setValue(value);
-        reimbursement.setType(type);
-        reimbursement.setExpenseDate(expenseDate);
-        reimbursement.setComments(comments);
-        reimbursement.setStatus(ReimbursementStatus.PENDING);
+        Reimbursement reimbursement = Reimbursement.builder()
+                .user(user)
+                .fileId(fileId)
+                .filePath(file.getOriginalFilename())
+                .fileType(file.getContentType())
+                .value(value)
+                .type(type)
+                .expenseDate(expenseDate)
+                .comments(comments)
+                .status(ReimbursementStatus.PENDING)
+                .build();
 
         return reimbursementRepository.save(reimbursement);
     }
@@ -62,8 +53,7 @@ public class ReimbursementService {
     @Transactional(readOnly = true)
     public byte[] getReimbursementFile(UUID reimbursementId) throws IOException {
         Reimbursement reimbursement = reimbursementRepository.findById(reimbursementId)
-            .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
-
+                .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
         FileStorageStrategy storageStrategy = storageFactory.getStorageStrategy();
         return storageStrategy.downloadFile(reimbursement.getFileId());
     }
@@ -71,8 +61,7 @@ public class ReimbursementService {
     @Transactional
     public void deleteReimbursementFile(UUID reimbursementId) throws IOException {
         Reimbursement reimbursement = reimbursementRepository.findById(reimbursementId)
-            .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
-
+                .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
         FileStorageStrategy storageStrategy = storageFactory.getStorageStrategy();
         storageStrategy.deleteFile(reimbursement.getFileId());
     }
@@ -103,7 +92,7 @@ public class ReimbursementService {
     }
 
     @Transactional
-    public void denyReimbursement(UUID id,String reason) {
+    public void denyReimbursement(UUID id, String reason) {
         Reimbursement reimbursement = reimbursementRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
         reimbursement.setStatus(ReimbursementStatus.DENIED);

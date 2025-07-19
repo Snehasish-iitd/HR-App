@@ -1,43 +1,62 @@
 package com.HR.app.DTO;
 
+import com.fasterxml.jackson.annotation.*;
+import lombok.*;
 
 import java.time.LocalDate;
-
 import java.util.UUID;
 
-import com.HR.app.Enums.ReimbursementType;
-import com.HR.app.Model.Users;
-
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
-@Getter @Setter
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReimbursementResponseDTO {
+    @JsonProperty("id")
     private UUID id;
-    private Double amount;
-    private ReimbursementType expenseType;
+
+    @JsonProperty("amount")
+    private Double value;
+
+    @JsonProperty("expenseType")
+    private String type;
+
+    @JsonProperty("expenseDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate expenseDate;
-    private String comment;
+
+    @JsonProperty("comment")
+    private String comments;
+
+    @JsonProperty("fileType")
     private String fileType;
+
+    @JsonProperty("fileId")
     private String fileId;
-    private String fileName;
 
-    // Fields for user-side display/context
-    private String status;            // Only populated for user "My History"
-    private String rejectionReason;   // Only populated when status == "REJECTED"
+    @JsonProperty("fileName")
+    private String filePath;
 
-    // Fields for approval context
-    private String employeeId;        // Only for approval queue (who submitted)
-    private String employeeName;      // Only for approval queue
+    @JsonProperty("status")
+    private String status; // lowercase: "pending", "approved", "rejected"
 
-    // Timestamps (optional if needed)
-    private LocalDate submissionDate;
+    @JsonProperty("rejectionReason")
+    private String rejectionReason;
+
+    @JsonProperty("employeeId")
+    private String employeeId;
+
+    @JsonProperty("employeeName")
+    private String employeeName;
+
+    @JsonProperty("submissionDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate createdAt;
+
+    @JsonProperty("approvedDate")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate approvedDate;
-    private Users approvedBy;
-}
 
+    @JsonProperty("approvedBy")
+    private String approvedBy;
+}

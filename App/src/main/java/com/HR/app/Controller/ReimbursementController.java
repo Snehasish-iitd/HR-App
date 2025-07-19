@@ -1,14 +1,5 @@
 package com.HR.app.Controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import com.HR.app.DTO.ReimbursementResponseDTO;
 import com.HR.app.Enums.ReimbursementStatus;
@@ -16,28 +7,33 @@ import com.HR.app.Enums.ReimbursementType;
 import com.HR.app.Model.Reimbursement;
 import com.HR.app.Model.Users;
 import com.HR.app.Service.ReimbursementService;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
+@AllArgsConstructor
 @RequestMapping("/api/reimbursements")
 public class ReimbursementController {
 
-    @Autowired
-    private ReimbursementService reimbursementService;
+    private final ReimbursementService reimbursementService;
 
     // 1. File a reimbursement
     @PostMapping("/submit")
-    public ResponseEntity<?> fileReimbursement(
+    public ResponseEntity<ReimbursementResponseDTO> fileReimbursement(
             Authentication authentication,
             @RequestParam("file") MultipartFile file,
             @RequestParam("value") Double value,
@@ -46,8 +42,10 @@ public class ReimbursementController {
             @RequestParam(value = "comments", required = false) String comments
     ) throws IOException {
         String userEmail = authentication.getName();
-        Reimbursement reimbursement = reimbursementService.fileReimbursement(userEmail, file, value, type, expenseDate, comments);
-        return ResponseEntity.ok(mapToHistoryDTO(reimbursement));
+        Reimbursement reimbursement = reimbursementService.fileReimbursement(
+                userEmail, file, value, type, expenseDate, comments
+        );
+        return ResponseEntity.ok(mapToDTO(reimbursement));
     }
 
     // 2. Get my reimbursement history (user)
@@ -56,7 +54,7 @@ public class ReimbursementController {
         String userEmail = authentication.getName();
         List<Reimbursement> history = reimbursementService.getMyHistory(userEmail);
         List<ReimbursementResponseDTO> dtos = history.stream()
-                .map(this::mapToHistoryDTO)
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
@@ -67,7 +65,7 @@ public class ReimbursementController {
     public ResponseEntity<List<ReimbursementResponseDTO>> getPendingApprovals() {
         List<Reimbursement> pending = reimbursementService.getPendingApprovals();
         List<ReimbursementResponseDTO> dtos = pending.stream()
-                .map(this::mapToApprovalQueueDTO)
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
@@ -78,13 +76,13 @@ public class ReimbursementController {
     public ResponseEntity<ReimbursementResponseDTO> getReimbursementById(@PathVariable UUID id) {
         Reimbursement reimbursement = reimbursementService.getReimbursementById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found"));
-        return ResponseEntity.ok(mapToHistoryDTO(reimbursement));
+        return ResponseEntity.ok(mapToDTO(reimbursement));
     }
 
     // 5. Download reimbursement file (inline mode support)
     @GetMapping("/{id}/file")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> downloadReimbursementFile(@PathVariable UUID id) throws IOException {
+    public ResponseEntity<byte[]> downloadReimbursementFile(@PathVariable UUID id) throws IOException {
         Reimbursement reimbursement = reimbursementService.getReimbursementById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reimbursement not found"));
         byte[] fileData = reimbursementService.getReimbursementFile(id);
@@ -97,7 +95,7 @@ public class ReimbursementController {
     // 6. Delete reimbursement file
     @DeleteMapping("/{id}/file")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> deleteReimbursementFile(@PathVariable UUID id) throws IOException {
+    public ResponseEntity<Void> deleteReimbursementFile(@PathVariable UUID id) throws IOException {
         reimbursementService.deleteReimbursementFile(id);
         return ResponseEntity.ok().build();
     }
@@ -105,59 +103,46 @@ public class ReimbursementController {
     // 7. Approve reimbursement
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
-    public ResponseEntity<?> approveReimbursement(@PathVariable UUID id, @PathVariable Users user) {
-        reimbursementService.approveReimbursement(id, user);
+    public ResponseEntity<Void> approveReimbursement(@PathVariable UUID id, Authentication authentication) {
+        Users approvedBy = (Users) authentication.getPrincipal();
+        reimbursementService.approveReimbursement(id, approvedBy);
         return ResponseEntity.ok().build();
     }
 
     // 8. Deny reimbursement
     @PostMapping("/{id}/deny")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
-    public ResponseEntity<?> denyReimbursement(@PathVariable UUID id, @RequestBody Map<String, String> body) {
-        String reason = body.get("reason");
-        reimbursementService.denyReimbursement(id, reason);
+    public ResponseEntity<Void> denyReimbursement(@PathVariable UUID id, @RequestBody DenyRequest request) {
+        reimbursementService.denyReimbursement(id, request.reason);
         return ResponseEntity.ok().build();
     }
 
-    // Reimbursement → DTO for "My History"
-    private ReimbursementResponseDTO mapToHistoryDTO(Reimbursement reimbursement) {
-        return new ReimbursementResponseDTO(
-            reimbursement.getId(),
-            reimbursement.getValue(),
-            reimbursement.getType(),
-            reimbursement.getExpenseDate(),
-            reimbursement.getComments(),
-            reimbursement.getFileType(),
-            reimbursement.getFileId(),
-            reimbursement.getFilePath(),
-            reimbursement.getStatus().toString(), // STATUS INCLUDED
-            reimbursement.getStatus() == ReimbursementStatus.DENIED ? reimbursement.getRejectionReason() : null,
-            null, // employeeId omitted
-            null, // employeeName omitted
-            reimbursement.getCreatedAt(),
-            reimbursement.getApprovedDate(),
-            reimbursement.getApprovedBy()
-        );
+    // Maps a Reimbursement entity to the frontend-ready DTO
+    private ReimbursementResponseDTO mapToDTO(Reimbursement reimbursement) {
+        return ReimbursementResponseDTO.builder()
+                .id(reimbursement.getId())
+                .value(reimbursement.getValue())
+                .type(reimbursement.getType().name())
+                .expenseDate(reimbursement.getExpenseDate())
+                .comments(reimbursement.getComments())
+                .fileType(reimbursement.getFileType())
+                .fileId(reimbursement.getFileId())
+                .filePath(reimbursement.getFilePath())
+                .status(reimbursement.getStatus().toString().toLowerCase())
+                .rejectionReason(reimbursement.getStatus() == ReimbursementStatus.DENIED ? reimbursement.getRejectionReason() : null)
+                .employeeId(reimbursement.getUser().getEid())
+                .employeeName(reimbursement.getUser().getName())
+                .createdAt(reimbursement.getCreatedAt())
+                .approvedDate(reimbursement.getApprovedDate())
+                .approvedBy(reimbursement.getApprovedBy() != null ? reimbursement.getApprovedBy().getName() : null)
+                .build();
     }
 
-    // Reimbursement → DTO for "Approval Queue"
-    private ReimbursementResponseDTO mapToApprovalQueueDTO(Reimbursement reimbursement) {
-        return new ReimbursementResponseDTO(
-            reimbursement.getId(),
-            reimbursement.getValue(),
-            reimbursement.getType(),
-            reimbursement.getExpenseDate(),
-            reimbursement.getComments(),
-            reimbursement.getFileType(),
-            reimbursement.getFileId(),
-            reimbursement.getFilePath(),
-            null, // STATUS OMITTED
-            null, // rejectionReason omitted
-            reimbursement.getUser() != null ? reimbursement.getUser().getEID() : null,
-            reimbursement.getUser() != null ? reimbursement.getUser().getName() : null,
-            reimbursement.getCreatedAt(),
-            null, // approvedDate omitted
-            null  // approvedBy omitted
-        );
+    // Denial request DTO
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DenyRequest {
+        private String reason;
     }
 }
