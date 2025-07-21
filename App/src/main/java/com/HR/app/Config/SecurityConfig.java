@@ -55,6 +55,8 @@ public class SecurityConfig {
                 // Employee role required to submit reimbursements
                 .requestMatchers("/api/reimbursements/submit").hasAnyRole("EMPLOYEE","ADMIN","HR","MANAGER")
 
+                .requestMatchers("/api/reimbursements/history").hasAnyRole("EMPLOYEE","ADMIN","HR","MANAGER")
+
                 // Admin, HR or Manager roles for other reimbursements endpoints
                 .requestMatchers("/api/reimbursements/**").hasAnyRole("ADMIN", "HR", "MANAGER")
 

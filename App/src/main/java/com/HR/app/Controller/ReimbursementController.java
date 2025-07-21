@@ -6,6 +6,7 @@ import com.HR.app.Enums.ReimbursementStatus;
 import com.HR.app.Enums.ReimbursementType;
 import com.HR.app.Model.Reimbursement;
 import com.HR.app.Model.Users;
+import com.HR.app.Repository.UserRepository;
 import com.HR.app.Service.ReimbursementService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class ReimbursementController {
 
     private final ReimbursementService reimbursementService;
+    private final UserRepository userRepository;
 
     // 1. File a reimbursement
     @PostMapping("/submit")
@@ -42,6 +44,7 @@ public class ReimbursementController {
             @RequestParam(value = "comments", required = false) String comments
     ) throws IOException {
         String userEmail = authentication.getName();
+        
         Reimbursement reimbursement = reimbursementService.fileReimbursement(
                 userEmail, file, value, type, expenseDate, comments
         );
@@ -104,7 +107,15 @@ public class ReimbursementController {
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
     public ResponseEntity<Void> approveReimbursement(@PathVariable UUID id, Authentication authentication) {
-        Users approvedBy = (Users) authentication.getPrincipal();
+        // Get the authenticated user's email (or username, depending on your app)
+        String email = authentication.getName();
+        // Fetch the real user entity from the database
+        Users approvedBy = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Optional: log the approver's role for debugging
+        // log.info("Approver: {}, role: {}", approvedBy.getEmail(), approvedBy.getRole());
+
         reimbursementService.approveReimbursement(id, approvedBy);
         return ResponseEntity.ok().build();
     }
@@ -112,10 +123,16 @@ public class ReimbursementController {
     // 8. Deny reimbursement
     @PostMapping("/{id}/deny")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
-    public ResponseEntity<Void> denyReimbursement(@PathVariable UUID id, @RequestBody DenyRequest request) {
-        reimbursementService.denyReimbursement(id, request.reason);
+    public ResponseEntity<Void> denyReimbursement(@PathVariable UUID id, @RequestBody DenyRequest request, Authentication authentication) {
+        String email = authentication.getName();
+        Users deniedBy = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Optional: You can record who denied the request by updating your service/model
+        reimbursementService.denyReimbursement(id, request.reason, deniedBy);
         return ResponseEntity.ok().build();
     }
+
 
     // Maps a Reimbursement entity to the frontend-ready DTO
     private ReimbursementResponseDTO mapToDTO(Reimbursement reimbursement) {
@@ -132,6 +149,7 @@ public class ReimbursementController {
                 .rejectionReason(reimbursement.getStatus() == ReimbursementStatus.DENIED ? reimbursement.getRejectionReason() : null)
                 .employeeId(reimbursement.getUser().getEid())
                 .employeeName(reimbursement.getUser().getName())
+                .managerId(reimbursement.getUser().getManagerId()) 
                 .createdAt(reimbursement.getCreatedAt())
                 .approvedDate(reimbursement.getApprovedDate())
                 .approvedBy(reimbursement.getApprovedBy() != null ? reimbursement.getApprovedBy().getName() : null)

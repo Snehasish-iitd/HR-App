@@ -49,6 +49,10 @@ public class ReimbursementResponseDTO {
     @JsonProperty("employeeName")
     private String employeeName;
 
+    @JsonProperty("managerId")
+    private String managerId;
+
+
     @JsonProperty("submissionDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate createdAt;

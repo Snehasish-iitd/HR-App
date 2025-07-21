@@ -81,22 +81,26 @@ public class ReimbursementService {
         return reimbursementRepository.findById(id);
     }
 
-    @Transactional
-    public void approveReimbursement(UUID id, Users approver) {
-        Reimbursement reimbursement = reimbursementRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
-        reimbursement.setStatus(ReimbursementStatus.APPROVED);
-        reimbursement.setApprovedBy(approver);
-        reimbursement.setApprovedDate(LocalDate.now());
-        reimbursementRepository.save(reimbursement);
-    }
+   // Approve
+@Transactional
+public void approveReimbursement(UUID id, Users approver) {
+    Reimbursement reimbursement = reimbursementRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
+    reimbursement.setStatus(ReimbursementStatus.APPROVED);
+    reimbursement.setApprovedBy(approver);
+    reimbursement.setApprovedDate(LocalDate.now());
+    reimbursementRepository.save(reimbursement);
+}
 
-    @Transactional
-    public void denyReimbursement(UUID id, String reason) {
-        Reimbursement reimbursement = reimbursementRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
-        reimbursement.setStatus(ReimbursementStatus.DENIED);
-        reimbursement.setRejectionReason(reason);
-        reimbursementRepository.save(reimbursement);
-    }
+// Deny (UPDATED to accept denier)
+@Transactional
+public void denyReimbursement(UUID id, String reason, Users deniedBy) {
+    Reimbursement reimbursement = reimbursementRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Reimbursement not found"));
+    reimbursement.setStatus(ReimbursementStatus.DENIED);
+    reimbursement.setRejectionReason(reason);
+    reimbursement.setApprovedBy(deniedBy); // (optional: if you want to track who denied)
+    reimbursement.setApprovedDate(LocalDate.now()); // (optional: track when denied)
+    reimbursementRepository.save(reimbursement);
+}
 }
